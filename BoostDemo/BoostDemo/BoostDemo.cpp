@@ -5,10 +5,20 @@
 #include <iostream>
 
 #include "boost/log/trivial.hpp"
+#include "boost/log/core.hpp"
+#include "boost/log/expressions.hpp"
+
+// 设置过滤级别
+void init()
+{
+	boost::log::core::get()->set_filter(
+		boost::log::trivial::severity >= boost::log::trivial::error
+	);
+}
 
 int main()
 {
-    std::cout << "Hello World!\n"; 
+	init();
 
 	BOOST_LOG_TRIVIAL(trace) << "A trace severity message";
 	BOOST_LOG_TRIVIAL(debug) << "A debug severity message";
