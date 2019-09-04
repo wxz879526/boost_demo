@@ -2,85 +2,50 @@
 //
 
 #include "pch.h"
-
-#define _USE_MATH_DEFINES
 #include <iostream>
-#include <vector>
-#include <memory>
-#include <string>
-#include <cmath>
+#include "boost/asio.hpp"
+#include "boost/bind.hpp"
 
-#include "boost/variant2/variant.hpp"
-
-
-class Rect
+class printer
 {
-private:
-	double width_, height_;
-
 public:
-	Rect(double width, double height)
-		: width_(width)
-		, height_(height)
+	printer(boost::asio::io_context &io)
+		: timer_(io, boost::asio::chrono::seconds(1))
+		, count_(0)
 	{
-
+		timer_.async_wait(boost::bind(&printer::print, this));
 	}
 
-	double Area() const
+	~printer()
 	{
-		return width_ * height_;
+		std::cout << "Hello World! count = " << count_ << std::endl;
 	}
-};
 
-class Circle
-{
+	void print()
+	{
+		if (count_ < 5)
+		{
+			std::cout << count_ << std::endl;
+			++(count_);
+
+			timer_.expires_at(timer_.expiry() + boost::asio::chrono::seconds(1));
+			timer_.async_wait(boost::bind(&printer::print, this));
+
+		}
+	}
+
 private:
-	double radius_;
-
-public:
-	Circle(double r)
-		: radius_(r)
-	{
-
-	}
-
-	double Area() const
-	{
-		return M_PI * radius_ * radius_;
-	}
+	boost::asio::steady_timer timer_;
+	int count_;
 };
-
-double total_area(const std::vector<boost::variant2::variant<Rect, Circle>> &v)
-{
-	double s = 0.0;
-	for (const auto &p : v)
-	{
-		auto p1 = boost::variant2::get_if<0>(&p);
-		s += boost::variant2::visit([](auto const &y) {return y.Area(); }, p);
-	}
-
-	return s;
-}
 
 int main()
 {
-	boost::variant2::variant<double, char, std::string> v1;
-	v1 = "123";
+	boost::asio::io_context io;
+	printer prt(io);
+	io.run();
+
 	
-	try
-	{
-		auto c = boost::variant2::get<2>(v1);
-	}
-	catch (const boost::variant2::bad_variant_access& e)
-	{
-		std::cout << e.what() << std::endl;
-	}
-
-	std::vector<boost::variant2::variant<Rect, Circle>> v;
-	v.push_back(Circle(1.0));
-	v.push_back(Rect(2.0, 3.0));
-
-	std::cout << "Total area: " << total_area(v) << std::endl;
 
 	return 0;
 }
